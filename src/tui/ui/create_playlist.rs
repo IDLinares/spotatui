@@ -17,8 +17,6 @@ fn centered_rect(bounds: Rect, width_pct: u16, height_pct: u16) -> Rect {
 }
 
 // Columns to scroll a bordered single-line input so the cursor stays inside it.
-// Only used by tests until the draw functions call it.
-#[allow(dead_code)]
 fn input_scroll(cursor: u16, box_width: u16) -> u16 {
   let inner_width = box_width.saturating_sub(2);
   if inner_width > 0 && cursor >= inner_width {
@@ -67,14 +65,18 @@ fn draw_name_stage(f: &mut Frame<'_>, app: &App, area: Rect) {
   f.render_widget(label, inner[0]);
 
   let name_text: String = app.view.create_playlist_name.iter().collect();
-  let input = Paragraph::new(name_text).style(theme.base_style()).block(
-    Block::default()
-      .borders(Borders::ALL)
-      .border_style(Style::default().fg(theme.active.into())),
-  );
+  let offset = input_scroll(app.view.create_playlist_name_cursor, inner[1].width);
+  let input = Paragraph::new(name_text)
+    .style(theme.base_style())
+    .scroll((0, offset))
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.active.into())),
+    );
   f.render_widget(input, inner[1]);
   f.set_cursor_position((
-    inner[1].x + 1 + app.view.create_playlist_name_cursor,
+    inner[1].x + 1 + app.view.create_playlist_name_cursor - offset,
     inner[1].y + 1,
   ));
 
@@ -113,19 +115,23 @@ fn draw_add_tracks_stage(f: &mut Frame<'_>, app: &App, area: Rect) {
   } else {
     Style::default().fg(theme.inactive.into())
   };
-  let search_input = Paragraph::new(search_text).style(theme.base_style()).block(
-    Block::default()
-      .title(Span::styled(
-        app.strings().popups.create_search_title,
-        Style::default().fg(theme.header.into()),
-      ))
-      .borders(Borders::ALL)
-      .border_style(search_border_style),
-  );
+  let offset = input_scroll(app.view.create_playlist_search_cursor, inner[0].width);
+  let search_input = Paragraph::new(search_text)
+    .style(theme.base_style())
+    .scroll((0, offset))
+    .block(
+      Block::default()
+        .title(Span::styled(
+          app.strings().popups.create_search_title,
+          Style::default().fg(theme.header.into()),
+        ))
+        .borders(Borders::ALL)
+        .border_style(search_border_style),
+    );
   f.render_widget(search_input, inner[0]);
   if app.view.create_playlist_focus == CreatePlaylistFocus::SearchInput {
     f.set_cursor_position((
-      inner[0].x + 1 + app.view.create_playlist_search_cursor,
+      inner[0].x + 1 + app.view.create_playlist_search_cursor - offset,
       inner[0].y + 1,
     ));
   }
@@ -304,7 +310,11 @@ mod tests {
     // 100x30 screen: popup is 80 wide at x=10; margin 2 puts the input box at
     // x=12, width 76, so its right border is at x=87.
     assert!(cursor.x < 87, "cursor escaped the box: x={}", cursor.x);
-    assert!(cursor.x > 12, "cursor is on the left border: x={}", cursor.x);
+    assert!(
+      cursor.x > 12,
+      "cursor is on the left border: x={}",
+      cursor.x
+    );
   }
 
   #[test]
@@ -323,6 +333,10 @@ mod tests {
 
     // Margin is 1 here: box at x=11, width 78, right border at x=88.
     assert!(cursor.x < 88, "cursor escaped the box: x={}", cursor.x);
-    assert!(cursor.x > 11, "cursor is on the left border: x={}", cursor.x);
+    assert!(
+      cursor.x > 11,
+      "cursor is on the left border: x={}",
+      cursor.x
+    );
   }
 }
