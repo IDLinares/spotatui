@@ -2806,10 +2806,7 @@ mod tests {
     app.refresh_language();
     let changed = pushed(&diff(&before, &app, Language::En), "settings");
     assert_eq!(changed["payload"]["language"], "zh-Hant");
-    assert_eq!(
-      changed["payload"]["strings"]["gui"]["settings"],
-      app.strings().gui.settings
-    );
+    assert_eq!(changed["payload"]["strings"]["gui"]["settings"], "設定");
     let language = changed["payload"]["rows"]
       .as_array()
       .unwrap()
@@ -2821,13 +2818,7 @@ mod tests {
       language["value"]["options"],
       serde_json::json!(["auto", "en", "zh-Hans", "zh-Hant"])
     );
-    assert_eq!(
-      language["value"]["labels"][0],
-      app
-        .strings()
-        .settings
-        .option_label("behavior.language", "auto")
-    );
+    assert_eq!(language["value"]["labels"][0], "自動（跟隨系統）");
   }
 
   #[test]
@@ -2865,7 +2856,7 @@ mod tests {
     assert_eq!(message["payload"]["language"], "zh-Hans");
     assert_eq!(
       message["payload"]["strings"]["gui"]["continue_button"],
-      crate::core::i18n::ZH_HANS.gui.continue_button
+      "继续"
     );
   }
 
@@ -2888,7 +2879,7 @@ mod tests {
         .find(|row| row.id == "behavior.disable_auto_update")
         .unwrap()
         .description,
-      app.strings().gui.update_checks_description
+      "跳过启动时及每 6 小时的自动检查；改为在此页手动检查、下载和安装更新"
     );
   }
 
