@@ -16,6 +16,18 @@ fn centered_rect(bounds: Rect, width_pct: u16, height_pct: u16) -> Rect {
   Rect::new(x, y, width, height)
 }
 
+// Columns to scroll a bordered single-line input so the cursor stays inside it.
+// Only used by tests until the draw functions call it.
+#[allow(dead_code)]
+fn input_scroll(cursor: u16, box_width: u16) -> u16 {
+  let inner_width = box_width.saturating_sub(2);
+  if inner_width > 0 && cursor >= inner_width {
+    cursor - inner_width + 1
+  } else {
+    0
+  }
+}
+
 pub fn draw_create_playlist_form(f: &mut Frame<'_>, app: &App) {
   let area = centered_rect(f.area(), 80, 80);
   f.render_widget(Clear, area);
@@ -259,6 +271,20 @@ mod tests {
       let title = app.strings().popups.add_tracks_title("{name}");
       assert!(title.starts_with(expected), "{title}");
     }
+  }
+
+  #[test]
+  fn input_scroll_is_zero_while_the_cursor_fits() {
+    assert_eq!(input_scroll(5, 20), 0);
+    // A zero-width box must not underflow or scroll
+    assert_eq!(input_scroll(5, 0), 0);
+  }
+
+  #[test]
+  fn input_scroll_keeps_the_cursor_inside_the_box() {
+    // box 20 wide -> 18 usable columns (2 are the borders)
+    assert_eq!(input_scroll(18, 20), 1);
+    assert_eq!(input_scroll(40, 20), 23);
   }
 
   #[test]
