@@ -260,4 +260,43 @@ mod tests {
       assert!(title.starts_with(expected), "{title}");
     }
   }
+
+  #[test]
+  fn long_playlist_name_keeps_the_cursor_inside_the_input_box() {
+    let mut app = App::default();
+    app.view.create_playlist_stage = CreatePlaylistStage::Name;
+    // 200 chars is far wider than the box; cursor is a display-width count
+    app.view.create_playlist_name = "a".repeat(200).chars().collect();
+    app.view.create_playlist_name_cursor = 200;
+
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).unwrap();
+    terminal
+      .draw(|f| draw_create_playlist_form(f, &app))
+      .unwrap();
+    let cursor = terminal.get_cursor_position().unwrap();
+
+    // 100x30 screen: popup is 80 wide at x=10; margin 2 puts the input box at
+    // x=12, width 76, so its right border is at x=87.
+    assert!(cursor.x < 87, "cursor escaped the box: x={}", cursor.x);
+    assert!(cursor.x > 12, "cursor is on the left border: x={}", cursor.x);
+  }
+
+  #[test]
+  fn long_search_query_keeps_the_cursor_inside_the_search_box() {
+    let mut app = App::default();
+    app.view.create_playlist_stage = CreatePlaylistStage::AddTracks;
+    app.view.create_playlist_focus = CreatePlaylistFocus::SearchInput;
+    app.view.create_playlist_search_input = "a".repeat(200).chars().collect();
+    app.view.create_playlist_search_cursor = 200;
+
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).unwrap();
+    terminal
+      .draw(|f| draw_create_playlist_form(f, &app))
+      .unwrap();
+    let cursor = terminal.get_cursor_position().unwrap();
+
+    // Margin is 1 here: box at x=11, width 78, right border at x=88.
+    assert!(cursor.x < 88, "cursor escaped the box: x={}", cursor.x);
+    assert!(cursor.x > 11, "cursor is on the left border: x={}", cursor.x);
+  }
 }
